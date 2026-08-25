@@ -573,13 +573,13 @@ A `.env.example` file can be added to document the required environment variable
 Clone the repository:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/KishriOra.git
+git clone https://github.com/mishraashutosh25/KishriOra.git
 ```
 
 Navigate to the backend:
 
 ```bash
-cd KishriOra/backend
+cd KrishiOra/backend
 ```
 
 Install dependencies:
