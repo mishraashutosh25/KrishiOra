@@ -6,13 +6,48 @@ import {
   getExpenseById,
   updateExpense,
   getTopExpenses,
-  deleteExpense
+  deleteExpense,
+  getAllUserExpenses,
+  createUserExpense,
 } from "../controllers/expense.controller";
 
 import { authMiddleware } from "../middleware/auth.middleware";
 
 const router = Router();
 
+// Global User-Wide Expense Routes
+router.get(
+  "/",
+  authMiddleware,
+  getAllUserExpenses
+);
+
+router.post(
+  "/",
+  authMiddleware,
+  createUserExpense
+);
+
+// Specific Expense Operations
+router.get(
+  "/:expenseId",
+  authMiddleware,
+  getExpenseById
+);
+
+router.patch(
+  "/:expenseId",
+  authMiddleware,
+  updateExpense
+);
+
+router.delete(
+  "/:expenseId",
+  authMiddleware,
+  deleteExpense
+);
+
+// Farm-Scoped Routes for backwards compatibility
 router.post(
   "/:farmId/expenses",
   authMiddleware,
@@ -42,7 +77,6 @@ router.get(
   authMiddleware,
   getExpenseById
 );
-
 
 router.delete(
   "/:farmId/expenses/:expenseId",

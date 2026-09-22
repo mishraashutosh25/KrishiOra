@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # 1. KrishiOra Backend API Container (Express 5 + Node.js 20)
+  backend:
+    container_name: krishiora-backend
+    build:
+      context: ./Backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./Backend/.env
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+    networks:
+      - krishiora-network
+
+  # 2. KrishiOra Frontend Web Container (React 19 + Vite + Nginx)
+  frontend:
+    container_name: krishiora-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - krishiora-network
+
+networks:
+  krishiora-network:
+    driver: bridge

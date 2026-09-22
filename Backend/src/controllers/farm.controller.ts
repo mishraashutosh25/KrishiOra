@@ -95,6 +95,7 @@ export const createFarm = async (
         return res.status(201).json({
             success: true,
             message: "Farm created successfully",
+            data,
             farm: data,
         });
 

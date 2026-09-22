@@ -779,3 +779,51 @@ export const getTopExpensesService = async (
 
   return topExpenses;
 };
+
+export const getUserAllExpensesService = async (
+  userId: string,
+  category?: string,
+  payment_status?: string,
+  payment_method?: string,
+  from_date?: string,
+  to_date?: string
+) => {
+  let query = supabaseAdmin
+    .from("expenses")
+    .select(`
+      *,
+      farms:farm_id (id, farm_name, area, area_unit),
+      crops:crop_id (id, crop_name)
+    `)
+    .eq("user_id", userId);
+
+  if (category) query = query.eq("category", category);
+  if (payment_status) query = query.eq("payment_status", payment_status);
+  if (payment_method) query = query.eq("payment_method", payment_method);
+  if (from_date) query = query.gte("expense_date", from_date);
+  if (to_date) query = query.lte("expense_date", to_date);
+
+  const { data: expenses, error } = await query.order("expense_date", { ascending: false });
+
+  if (error) {
+    throw new Error(`Failed to fetch user expenses: ${error.message}`);
+  }
+
+  const expenseList = expenses || [];
+  const total_expense = expenseList.reduce((acc, curr) => acc + (Number(curr.total_amount) || 0), 0);
+  const total_count = expenseList.length;
+
+  const category_breakdown: Record<string, number> = {};
+  for (const exp of expenseList) {
+    category_breakdown[exp.category] = (category_breakdown[exp.category] || 0) + (Number(exp.total_amount) || 0);
+  }
+
+  return {
+    summary: {
+      total_expense,
+      total_count,
+      category_breakdown
+    },
+    expenses: expenseList
+  };
+};

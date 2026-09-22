@@ -76,21 +76,25 @@ export const googleCallback = async (
         const errorDescription = req.query.error_description;
 
         if (oauthError) {
-            return res.status(400).json({
-                success: false,
-                message: "Google authentication failed",
-                error: oauthError,
-                error_description: errorDescription,
-            });
+            const frontendUrl =
+                process.env.FRONTEND_URL ||
+                "http://localhost:5173";
+
+            return res.redirect(
+                `${frontendUrl}/auth/callback?error=${encodeURIComponent(String(oauthError))}&error_description=${encodeURIComponent(String(errorDescription || ""))}`
+            );
         }
 
         const code = req.query.code;
 
         if (!code || typeof code !== "string") {
-            return res.status(400).json({
-                success: false,
-                message: "Authorization code is missing",
-            });
+            const frontendUrl =
+                process.env.FRONTEND_URL ||
+                "http://localhost:5173";
+
+            return res.redirect(
+                `${frontendUrl}/auth/callback?error=missing_code&error_description=${encodeURIComponent("Authorization code is missing")}`
+            );
         }
 
         const supabase = createSupabaseServerClient(req, res);
@@ -104,18 +108,23 @@ export const googleCallback = async (
                 error.message
             );
 
-            return res.status(401).json({
-                success: false,
-                message: "Failed to exchange authorization code",
-                error: error.message,
-            });
+            const frontendUrl =
+                process.env.FRONTEND_URL ||
+                "http://localhost:5173";
+
+            return res.redirect(
+                `${frontendUrl}/auth/callback?error=exchange_failed&error_description=${encodeURIComponent(error.message)}`
+            );
         }
 
-        if (!data.user) {
-            return res.status(401).json({
-                success: false,
-                message: "User authentication failed",
-            });
+        if (!data.user || !data.session) {
+            const frontendUrl =
+                process.env.FRONTEND_URL ||
+                "http://localhost:5173";
+
+            return res.redirect(
+                `${frontendUrl}/auth/callback?error=no_user&error_description=${encodeURIComponent("User authentication failed")}`
+            );
         }
 
         console.log(
@@ -123,20 +132,20 @@ export const googleCallback = async (
             data.user.email
         );
 
-        console.log("USER ID:", data.user.id);
-
-        // TEMPORARY: Postman testing ke liye
-        console.log("====================================");
-        console.log("ACCESS TOKEN:");
-        console.log(data.session?.access_token);
-        console.log("====================================");
-
         const frontendUrl =
             process.env.FRONTEND_URL ||
-            "http://localhost:3000";
+            "http://localhost:5173";
+
+        // Pass token and user info to frontend via URL params
+        const params = new URLSearchParams({
+            access_token: data.session.access_token,
+            user_id: data.user.id,
+            user_email: data.user.email || "",
+            user_name: data.user.user_metadata?.full_name || data.user.user_metadata?.name || "",
+        });
 
         return res.redirect(
-            `${frontendUrl}/auth/success`
+            `${frontendUrl}/auth/callback?${params.toString()}`
         );
 
     } catch (error) {
@@ -145,10 +154,13 @@ export const googleCallback = async (
             error
         );
 
-        return res.status(500).json({
-            success: false,
-            message: "Google authentication callback failed",
-        });
+        const frontendUrl =
+            process.env.FRONTEND_URL ||
+            "http://localhost:5173";
+
+        return res.redirect(
+            `${frontendUrl}/auth/callback?error=server_error&error_description=${encodeURIComponent("Google authentication callback failed")}`
+        );
     }
 };
 
@@ -161,6 +173,8 @@ export const emailSignup = async (
             email,
             password,
             full_name,
+            phone,
+            state,
         } = req.body;
 
         if (!email || !password) {
@@ -177,6 +191,8 @@ export const emailSignup = async (
                 options: {
                     data: {
                         full_name: full_name || null,
+                        phone: phone || null,
+                        state: state || null,
                     },
                 },
             });
@@ -877,7 +893,7 @@ export const resendResetOtp = async (
             });
         }
 
-        // 60-second cooldown
+        // 60-second cooldown 
         const cooldown = 60 * 1000;
 
         const createdAt = new Date(
@@ -1127,3 +1143,4 @@ export const changePassword = async (
         });
     }
 };
+
